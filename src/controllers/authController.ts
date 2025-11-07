@@ -26,11 +26,16 @@ export const registerUser = async (req: Request, res: Response) => {
       password: hashedPassword,
       role: normalizedRole,
     });
+     const token = jwt.sign(
+      { id: newUser._id, email: newUser.email, role: newUser.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1d" }
+    );
     console.log("User registered:", newUser);
 
     res
       .status(201)
-      .json({ message: "User registered successfully", user: newUser });
+      .json({ message: "User registered successfully", user: newUser, token });
   } catch (err) {
     console.error("❌ Registration error:", err);
     res.status(500).json({ message: "Server error", error: err });
