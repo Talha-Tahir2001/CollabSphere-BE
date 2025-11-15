@@ -38,3 +38,68 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getProjectById = async (req: AuthRequest, res: Response) => {
+  try {
+    const { workspaceId, projectId } = req.params;
+    
+    const project = await Project.findOne({ 
+      _id: projectId, 
+      workspace: workspaceId 
+    })
+      .populate("workspace", "name description")
+      .populate("createdBy", "username email role");
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.json(project);
+  } catch (error) {
+    console.error("getProjectById error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const updateProject = async (req: AuthRequest, res: Response) => {
+  try {
+    const { workspaceId, projectId } = req.params;
+    const { name, description } = req.body;
+
+    const project = await Project.findOneAndUpdate(
+      { _id: projectId, workspace: workspaceId },
+      { name, description },
+      { new: true }
+    );
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.json(project);
+  } catch (error) {
+    console.error("updateProject error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const deleteProject = async (req: AuthRequest, res: Response) => {
+  try {
+    const { workspaceId, projectId } = req.params;
+
+    const project = await Project.findOneAndDelete({ 
+      _id: projectId, 
+      workspace: workspaceId 
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.json({ message: "Project deleted successfully" });
+  } catch (error) {
+    console.error("deleteProject error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

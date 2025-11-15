@@ -8,11 +8,26 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "Unauthorized: user not found" });
     }
 
-    const { title, description, assignedTo, projectId, workspaceId, dueDate } = req.body;
+    // Get from URL params
+    const { workspaceId, projectId } = req.params;
+    
+    // Get from request body
+    const { title, description, assignedTo, dueDate, status } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ message: "Task title is required" });
+    }
+
+    // Set initial progress based on status
+    let progress = 0;
+    if (status === "In Progress") progress = 50;
+    if (status === "Done") progress = 100;
 
     const task = await Task.create({
       title,
       description,
+      status: status || "Todo",
+      progress,
       project: projectId,
       workspace: workspaceId,
       assignedTo,
@@ -20,43 +35,83 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       dueDate,
     });
 
-    res.status(201).json({ message: "Task created successfully", task });
+    res.status(201).json(task);
   } catch (err: any) {
+    console.error("createTask error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 export const getTasks = async (req: AuthRequest, res: Response) => {
   try {
-    const { projectId } = req.params;
-    const tasks = await Task.find({ project: projectId })
+    const { workspaceId, projectId } = req.params;
+    
+    const tasks = await Task.find({ 
+      project: projectId,
+      workspace: workspaceId 
+    })
       .populate("assignedTo", "username email")
       .populate("createdBy", "username email")
-      .populate("workspace", "name")
-      .populate("project", "name")
       .sort({ createdAt: -1 });
 
     res.json(tasks);
   } catch (err: any) {
+    console.error("getTasks error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { taskId } = req.params;
-    const { title, description, status, progress, assignedTo } = req.body;
+    const { workspaceId, projectId, taskId } = req.params;
+    const { title, description, status, progress, assignedTo, dueDate } = req.body;
 
-    const task = await Task.findByIdAndUpdate(
-      taskId,
-      { title, description, status, progress, assignedTo },
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+    if (progress !== undefined) updateData.progress = progress;
+    if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+    if (dueDate !== undefined) updateData.dueDate = dueDate;
+
+    const task = await Task.findOneAndUpdate(
+      { 
+        _id: taskId,
+        project: projectId,
+        workspace: workspaceId 
+      },
+      updateData,
       { new: true }
     );
 
-    if (!task) return res.status(404).json({ message: "Task not found" });
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-    res.json({ message: "Task updated successfully", task });
+    res.json(task);
   } catch (err: any) {
+    console.error("updateTask error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const deleteTask = async (req: AuthRequest, res: Response) => {
+  try {
+    const { workspaceId, projectId, taskId } = req.params;
+
+    const task = await Task.findOneAndDelete({ 
+      _id: taskId,
+      project: projectId,
+      workspace: workspaceId 
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json({ message: "Task deleted successfully" });
+  } catch (err: any) {
+    console.error("deleteTask error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };

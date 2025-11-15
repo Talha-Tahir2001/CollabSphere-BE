@@ -50,9 +50,16 @@ console.log("✅ Registering auth routes...");
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
-app.use("/api/projects", projectRoutes);
+// app.use("/api/projects", projectRoutes);
+// app.use("/api/tasks", taskRoutes);
+
+// Mount project routes under workspaces
+app.use("/api/workspaces/:workspaceId/projects", projectRoutes);
+
+// Mount task routes under projects
+app.use("/api/workspaces/:workspaceId/projects/:projectId/tasks", taskRoutes);
+
 app.use("/api/profile", profileRoutes);
-app.use("/api/tasks", taskRoutes);
 app.use("/api/messages", messageRoutes);
 
 const PORT = process.env.PORT || 5000;
