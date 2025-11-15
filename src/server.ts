@@ -34,6 +34,7 @@ app.use(
     origin: process.env.CLIENT_URL || "http://localhost:5174",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
